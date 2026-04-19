@@ -43,38 +43,69 @@
     </form>
   </div>
 
-   <script>
+    <script>
     var userId = "", empName = "";
-    var WEB_APP_URL = "เดี๋ยวค่อยมาใส่ทีหลังครับ"; // ปล่อยทิ้งไว้ก่อน ขอแค่ดึงชื่อให้ได้ก่อน
+    
+    // ⚠️ สำคัญมาก: เอาลิงก์ Web App URL (ที่ลงท้ายด้วย /exec) ของคุณมาใส่ตรงนี้!
+    var WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwYklEleNRkI4oMpdG_bzdPkp3nX8RhmU8NcLOvIq_iUqEocOA0V5jjx9fdjBN8bbt2/exec"; 
 
     async function main() {
-      var statusDiv = document.getElementById("profile");
-      statusDiv.innerHTML = "สเต็ป 1: กำลังเริ่มเชื่อมต่อ LIFF...";
-
       try {
-        await liff.init({ liffId: "2009828487-hcLEuF0g" });
-        statusDiv.innerHTML = "สเต็ป 2: เชื่อมต่อสำเร็จ! กำลังเช็คสถานะ...";
+        await liff.init({ liffId: "2009828487-hcLEuF0g" }); 
 
         if (liff.isLoggedIn()) {
-          statusDiv.innerHTML = "สเต็ป 3: ล็อกอินแล้ว! กำลังดึงชื่อ...";
           const profile = await liff.getProfile();
           userId = profile.userId;
           empName = profile.displayName;
-          statusDiv.innerHTML = "ผู้ขอลา: <b style='color:#00B900;'>" + empName + "</b>";
+          document.getElementById("profile").innerHTML = "ผู้ขอลา: <b style='color:#00B900;'>" + empName + "</b>";
         } else {
-          statusDiv.innerHTML = "สเต็ป 4: ยังไม่ล็อกอิน กำลังสั่งเข้าสู่ระบบ...";
           liff.login();
         }
       } catch (err) {
-        statusDiv.innerHTML = "<b style='color:red;'>พังตอนเชื่อมต่อ: " + err.message + "</b>";
+        document.getElementById("profile").innerHTML = "<b style='color:red;'>พังตอนเชื่อมต่อ: " + err.message + "</b>";
       }
     }
     
-    // สั่งให้เริ่มทำงานทันที
     main();
 
     function submitForm() {
-      alert("ตอนนี้เรากำลังทดสอบดึงชื่ออยู่นะครับ ปุ่มส่งข้อมูลยังไม่เปิดใช้งาน");
+      var t = document.getElementById("leaveType").value;
+      var d = document.getElementById("leaveDate").value;
+      var p = document.getElementById("leavePeriod").value;
+      var r = document.getElementById("reason").value;
+      
+      if(!d || !p || !r) return alert("กรุณากรอกข้อมูลให้ครบถ้วน");
+
+      // แปลงช่วงเวลาเป็นตัวเลขเพื่อบันทึกลงตาราง
+      var days = (p === "เต็มวัน") ? 1 : 0.5;
+
+      document.getElementById("submitBtn").innerText = "กำลังส่งข้อมูล...";
+      document.getElementById("submitBtn").disabled = true;
+
+      // สั่งยิงข้อมูลข้ามไปหา Google Apps Script
+      fetch(WEB_APP_URL, {
+        method: "POST",
+        body: JSON.stringify({ action: "api_request", userId: userId, empName: empName, leaveType: t, leaveDate: d, leavePeriod: p, leaveDays: days, reason: r })
+      })
+      .then(response => response.text())
+      .then(result => {
+        if(result === "unregistered") {
+          alert("❌ คุณยังไม่ได้ลงทะเบียนพนักงาน!\nกรุณากดเมนู 'ลงทะเบียน' ในแชทก่อนครับ");
+          liff.closeWindow();
+        } else if(result === "success") {
+          // ถ้าสำเร็จ ให้เปลี่ยนหน้าจอเป็นสีเขียว และรอ 1.5 วิเพื่อปิดหน้าต่างอัตโนมัติ
+          document.body.innerHTML = "<div style='text-align:center; padding: 40px;'><h1 style='color:#00B900;'>✅ ส่งคำขอสำเร็จ!</h1><p>ระบบบันทึกข้อมูลเรียบร้อยแล้ว</p></div>";
+          setTimeout(function() { liff.closeWindow(); }, 1500); 
+        } else {
+          alert("เกิดข้อผิดพลาดจากเซิร์ฟเวอร์: " + result);
+          document.getElementById("submitBtn").innerText = "ส่งคำขอ";
+          document.getElementById("submitBtn").disabled = false;
+        }
+      }).catch(err => {
+        alert("ส่งข้อมูลไม่สำเร็จ กรุณาลองใหม่: " + err);
+        document.getElementById("submitBtn").innerText = "ส่งคำขอ";
+        document.getElementById("submitBtn").disabled = false;
+      });
     }
   </script>
 </body>
