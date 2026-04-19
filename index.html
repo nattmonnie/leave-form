@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ฟอร์มแจ้งลางาน</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body { font-family: 'Kanit', sans-serif; padding: 20px; background-color: #f4f6f9; margin: 0; }
+    .container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
+    h2 { text-align: center; color: #333; }
+    label { font-weight: bold; margin-top: 10px; display: block; color: #555; }
+    select, input, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
+    button { width: 100%; padding: 12px; background-color: #00B900; color: white; border: none; border-radius: 5px; font-size: 16px; margin-top: 20px; cursor: pointer; font-weight: bold;}
+    #profile { text-align: center; margin-bottom: 20px; font-size: 16px; color: #0056b3;}
+  </style>
+</head>
+<body>
+  <div class="container" id="formContainer">
+    <h2>ฟอร์มแจ้งลางาน</h2>
+    <div id="profile">กำลังเชื่อมต่อระบบ...</div>
+
+    <form id="leaveForm">
+      <label>ประเภทการลา:</label>
+      <select id="leaveType"><option value="ลาป่วย">ลาป่วย</option><option value="ลากิจ">ลากิจ</option><option value="พักร้อน">พักร้อน</option></select>
+      <label>วันที่ลา:</label><input type="date" id="leaveDate">
+      <label>เหตุผล:</label><textarea id="reason" rows="3"></textarea>
+      <button type="button" id="submitBtn" onclick="submitForm()">ส่งคำขอ</button>
+    </form>
+  </div>
+
+  <script>
+    var userId = "", empName = "";
+    
+    // ⚠️ 1. เอา Web App URL (จากสเต็ป 1) มาใส่ตรงนี้
+    var WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyBfBmOzb1zozDYx4LAE_LRbB9ytRMf1jXsTx_42IAH-ICx56iadCX1XJSkDPukvSZ6/exec"; 
+
+    async function main() {
+      // ⚠️ 2. เอา LIFF ID มาใส่ตรงนี้
+      await liff.init({ liffId: "2009828487-hcLEuF0g" }); 
+
+      if (liff.isLoggedIn()) {
+        const profile = await liff.getProfile();
+        userId = profile.userId;
+        empName = profile.displayName;
+        document.getElementById("profile").innerHTML = "ผู้ขอลา: <b style='color:#00B900;'>" + empName + "</b>";
+      } else {
+        liff.login();
+      }
+    }
+    main();
+
+    function submitForm() {
+      var t = document.getElementById("leaveType").value;
+      var d = document.getElementById("leaveDate").value;
+      var r = document.getElementById("reason").value;
+      if(!d || !r) return alert("กรุณากรอกข้อมูลให้ครบถ้วน");
+
+      document.getElementById("submitBtn").innerText = "กำลังส่งข้อมูล...";
+      document.getElementById("submitBtn").disabled = true;
+
+      // ส่งข้อมูลข้ามเซิร์ฟเวอร์ไปหา Google Apps Script
+      fetch(WEB_APP_URL, {
+        method: "POST",
+        body: JSON.stringify({ action: "api_request", userId: userId, empName: empName, leaveType: t, leaveDate: d, reason: r })
+      })
+      .then(response => response.text())
+      .then(result => {
+        if(result === "success") {
+          // เปลี่ยนหน้าต่างเป็นสีเขียวและปิดแอปอัตโนมัติ
+          document.body.innerHTML = "<div style='text-align:center; padding: 40px; font-family: Kanit;'><h1 style='color:#00B900;'>✅ สำเร็จ!</h1><p>ส่งข้อมูลเรียบร้อยแล้ว</p></div>";
+          setTimeout(function() { liff.closeWindow(); }, 1500); 
+        }
+      }).catch(err => {
+        alert("ส่งข้อมูลไม่สำเร็จ: " + err);
+        document.getElementById("submitBtn").innerText = "ส่งคำขอ";
+        document.getElementById("submitBtn").disabled = false;
+      });
+    }
+  </script>
+</body>
+</html>
