@@ -44,30 +44,37 @@
     </form>
   </div>
 
-  <script>
-    var userId = "<?= uid ?>";
-    var empName = "<?= name ?>";
-    var WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz6q2ARcSOCNZBKqRz9EJIzr5unptMiqgVXkQyjCj4JT8WnFqR1mHmL7s_hXtVECi9T/exec"; // ⚠️ ใส่ลิงก์ /exec เหมือนเดิม
+    <script>
+    var userId = "", empName = "";
+    
+    // ⚠️ 1. เอาลิงก์ Web App URL (ที่ลงท้ายด้วย /exec) มาใส่ตรงนี้ครับ
+    var WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz6q2ARcSOCNZBKqRz9EJIzr5unptMiqgVXkQyjCj4JT8WnFqR1mHmL7s_hXtVECi9T/exec"; 
 
-    window.onload = function() {
-      // สกัด UID และ Name จาก URL อัตโนมัติ (เทคนิควิชามาร)
-      const urlParams = new URLSearchParams(window.location.search);
-      userId = urlParams.get('uid') || "";
-      empName = urlParams.get('name') || "";
+    // 🌟 2. ใช้ระบบ LIFF ดึงชื่ออัตโนมัติ (ไม่ต้องรอลิงก์จากบอท)
+    async function main() {
+      try {
+        await liff.init({ liffId: "2009828487-hcLEuF0g" }); 
 
-      if(userId !== "") {
-        document.getElementById("profile").innerHTML = "ผู้ขอลา: <b style='color:#00B900;'>" + empName + "</b>";
-      } else {
-        document.getElementById("profile").innerHTML = "<b style='color:red;'>โปรดเข้าผ่านปุ่มในแชท LINE เท่านั้น</b>";
-        document.getElementById("submitBtn").disabled = true;
+        if (liff.isLoggedIn()) {
+          const profile = await liff.getProfile();
+          userId = profile.userId;
+          empName = profile.displayName;
+          document.getElementById("profile").innerHTML = "ผู้ขอลา: <b style='color:#00B900;'>" + empName + "</b>";
+        } else {
+          liff.login();
+        }
+      } catch (err) {
+        document.getElementById("profile").innerHTML = "<b style='color:red;'>พังตอนเชื่อมต่อ: " + err.message + "</b>";
       }
-    };
+    }
+    
+    main();
 
     function submitForm() {
       var t = document.getElementById("leaveType").value;
       var d = document.getElementById("leaveDate").value;
       var p = document.getElementById("leavePeriod").value;
-      var r = document.getElementById("reason").value || "-"; // ถ้าไม่กรอกเหตุผล ให้ส่งเครื่องหมายขีดไปแทน
+      var r = document.getElementById("reason").value || "-"; 
       var fileInput = document.getElementById("uploadFile").files[0];
       
       if(!d || !p) return alert("กรุณากรอกวันที่ให้ครบถ้วน");
@@ -77,7 +84,7 @@
       document.getElementById("submitBtn").innerText = "กำลังประมวลผล...";
       document.getElementById("submitBtn").disabled = true;
 
-      // 🌟 ถ้ามีการแนบรูป ให้แปลงรูปภาพก่อนส่ง
+      // ถ้ามีการแนบรูป ให้แปลงรูปก่อน
       if (fileInput) {
         document.getElementById("submitBtn").innerText = "กำลังอัปโหลดรูปภาพ...";
         var reader = new FileReader();
@@ -87,7 +94,7 @@
         };
         reader.readAsDataURL(fileInput);
       } else {
-        // ถ้าไม่มีรูป ก็ส่งข้อมูลแบบปกติไปเลย
+        // ถ้าไม่มีรูป ส่งปกติ
         sendToGoogle(t, d, p, days, r, "", "", "");
       }
     }
@@ -107,7 +114,7 @@
         if(result === "unregistered") {
           alert("❌ คุณยังไม่ได้ลงทะเบียนพนักงาน!");
         } else if(result === "success") {
-          document.body.innerHTML = "<div style='text-align:center; padding: 40px;'><h1 style='color:#00B900;'>✅ ส่งคำขอสำเร็จ!</h1><p>ระบบบันทึกข้อมูลเรียบร้อยแล้ว<br><br><b style='color:#555;'>กรุณากดกากบาท (X) มุมขวาบนเพื่อปิดหน้านี้</b></p></div>";
+          document.body.innerHTML = "<div style='text-align:center; padding: 40px;'><h1 style='color:#00B900;'>✅ ส่งคำขอสำเร็จ!</h1><p>ระบบบันทึกข้อมูลเรียบร้อยแล้ว<br><br><b style='color:#555;'>กดกากบาท (X) มุมขวาบนเพื่อปิดหน้านี้ได้เลยครับ</b></p></div>";
         } else {
           alert("เกิดข้อผิดพลาด: " + result);
           document.getElementById("submitBtn").innerText = "ส่งคำขอ";
