@@ -4,6 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ฟอร์มแจ้งลางาน</title>
+  <!-- 🌟 บรรทัดนี้สำคัญมาก ห้ามหายเด็ดขาด (ตัวโหลดระบบ LIFF) -->
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
     body { font-family: 'Kanit', sans-serif; padding: 20px; background-color: #f4f6f9; margin: 0; }
     .container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
@@ -18,7 +20,7 @@
 <body>
   <div class="container">
     <h2>ฟอร์มแจ้งลางาน</h2>
-    <div id="profile">กำลังโหลดข้อมูล...</div>
+    <div id="profile">กำลังเชื่อมต่อระบบ...</div>
 
     <form id="leaveForm">
       <label>ประเภทการลา:</label>
@@ -44,13 +46,13 @@
     </form>
   </div>
 
-    <script>
+  <script>
     var userId = "", empName = "";
     
-    // ⚠️ 1. เอาลิงก์ Web App URL (ที่ลงท้ายด้วย /exec) มาใส่ตรงนี้ครับ
+    // ⚠️ อย่าลืมเอาลิงก์ Web App URL (ที่ลงท้ายด้วย /exec) ของคุณมาใส่ตรงนี้นะครับ!
     var WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz6q2ARcSOCNZBKqRz9EJIzr5unptMiqgVXkQyjCj4JT8WnFqR1mHmL7s_hXtVECi9T/exec"; 
 
-    // 🌟 2. ใช้ระบบ LIFF ดึงชื่ออัตโนมัติ (ไม่ต้องรอลิงก์จากบอท)
+    // 🌟 ระบบ LIFF ดึงชื่ออัตโนมัติ
     async function main() {
       try {
         await liff.init({ liffId: "2009828487-hcLEuF0g" }); 
@@ -84,7 +86,7 @@
       document.getElementById("submitBtn").innerText = "กำลังประมวลผล...";
       document.getElementById("submitBtn").disabled = true;
 
-      // ถ้ามีการแนบรูป ให้แปลงรูปก่อน
+      // แปลงรูปภาพ (ถ้ามีแนบมา)
       if (fileInput) {
         document.getElementById("submitBtn").innerText = "กำลังอัปโหลดรูปภาพ...";
         var reader = new FileReader();
@@ -112,7 +114,8 @@
       .then(response => response.text())
       .then(result => {
         if(result === "unregistered") {
-          alert("❌ คุณยังไม่ได้ลงทะเบียนพนักงาน!");
+          alert("❌ คุณยังไม่ได้ลงทะเบียนพนักงาน!\nกรุณากดเมนู 'ลงทะเบียน' ในแชทก่อนครับ");
+          liff.closeWindow();
         } else if(result === "success") {
           document.body.innerHTML = "<div style='text-align:center; padding: 40px;'><h1 style='color:#00B900;'>✅ ส่งคำขอสำเร็จ!</h1><p>ระบบบันทึกข้อมูลเรียบร้อยแล้ว<br><br><b style='color:#555;'>กดกากบาท (X) มุมขวาบนเพื่อปิดหน้านี้ได้เลยครับ</b></p></div>";
         } else {
