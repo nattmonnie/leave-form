@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ลงทะเบียนพนักงาน</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body { font-family: 'Kanit', sans-serif; padding: 20px; background-color: #f4f6f9; margin: 0; }
+    .container { background: white; padding: 20px; border-radius: 10px; max-width: 500px; margin: auto; }
+    h2 { text-align: center; color: #333; }
+    label { font-weight: bold; margin-top: 10px; display: block; color: #555; }
+    input { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+    button { width: 100%; padding: 12px; background-color: #00B900; color: white; border: none; border-radius: 5px; font-size: 16px; margin-top: 20px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>ลงทะเบียนพนักงาน</h2>
+    <form>
+      <label>ชื่อ - นามสกุลจริง:</label>
+      <input type="text" id="realName" placeholder="เช่น สมชาย ใจดี">
+      <button type="button" id="submitBtn" onclick="submitRegister()">ลงทะเบียน</button>
+    </form>
+  </div>
+
+  <script>
+    var userId = "", lineName = "";
+    var WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwYklEleNRkI4oMpdG_bzdPkp3nX8RhmU8NcLOvIq_iUqEocOA0V5jjx9fdjBN8bbt2/exec"; // ⚠️ แปะ Web App URL
+
+    async function main() {
+      await liff.init({ liffId: "2009828487-hcLEuF0g" }); // ⚠️ แปะ LIFF ID
+      if (liff.isLoggedIn()) {
+        const profile = await liff.getProfile();
+        userId = profile.userId; lineName = profile.displayName;
+      } else { liff.login(); }
+    }
+    main();
+
+    function submitRegister() {
+      var rn = document.getElementById("realName").value;
+      if(!rn) return alert("กรุณากรอกชื่อ-สกุล");
+
+      document.getElementById("submitBtn").innerText = "กำลังบันทึก...";
+      document.getElementById("submitBtn").disabled = true;
+
+      fetch(WEB_APP_URL, {
+        method: "POST",
+        body: JSON.stringify({ action: "register", userId: userId, lineName: lineName, realName: rn })
+      })
+      .then(response => response.text())
+      .then(result => {
+        if(result === "success") {
+          document.body.innerHTML = "<h2 style='text-align:center; color:green; margin-top:50px;'>✅ ลงทะเบียนสำเร็จ!</h2>";
+          setTimeout(function() { liff.closeWindow(); }, 1500); 
+        }
+      });
+    }
+  </script>
+</body>
+</html>
