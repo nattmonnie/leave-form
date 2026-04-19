@@ -4,7 +4,6 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ฟอร์มแจ้งลางาน</title>
-  <!-- 🌟 บรรทัดนี้สำคัญมาก ห้ามหายเด็ดขาด (ตัวโหลดระบบ LIFF) -->
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
     body { font-family: 'Kanit', sans-serif; padding: 20px; background-color: #f4f6f9; margin: 0; }
@@ -15,26 +14,42 @@
     button { width: 100%; padding: 12px; background-color: #00B900; color: white; border: none; border-radius: 5px; font-size: 16px; margin-top: 20px; cursor: pointer; font-weight: bold;}
     #profile { text-align: center; margin-bottom: 20px; font-size: 16px;}
     .optional { color: #888; font-weight: normal; font-size: 12px;}
+    .hidden { display: none; }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>ฟอร์มแจ้งลางาน</h2>
-    <div id="profile">กำลังเชื่อมต่อระบบ...</div>
+    <div id="profile">กำลังเชื่อมต่อบัญชี...</div>
 
     <form id="leaveForm">
-      <label>ประเภทการลา:</label>
-      <select id="leaveType"><option value="ลาป่วย">ลาป่วย</option><option value="ลากิจส่วนตัว">ลากิจส่วนตัว</option></select>
+            <label>ประเภทการลา:</label>
+      <select id="leaveType">
+        <option value="ลากิจส่วนตัว" selected>ลากิจส่วนตัว</option>
+        <option value="ลาป่วย">ลาป่วย</option>
+      </select>
       
-      <label>วันที่ลา:</label>
-      <input type="date" id="leaveDate">
+      <label>ตั้งแต่วันที่:</label>
+      <input type="date" id="startDate" onchange="autoFillEndDate()">
       
-      <label>ช่วงเวลาการลา:</label>
-      <select id="leavePeriod">
+      <div id="endDateDiv" class="hidden">
+        <label>ถึงวันที่:</label>
+        <input type="date" id="endDate">
+      </div>
+      
+      <label>ช่วงเวลา / รูปแบบการลา:</label>
+      <select id="leavePeriod" onchange="checkPeriod()">
         <option value="เต็มวัน">เต็มวัน (1 วัน)</option>
         <option value="ครึ่งวันเช้า">ครึ่งวันเช้า (0.5 วัน)</option>
         <option value="ครึ่งวันบ่าย">ครึ่งวันบ่าย (0.5 วัน)</option>
+        <option value="หลายวัน">ลาต่อเนื่องหลายวัน (เลือกช่วงวันที่)</option>
       </select>
+
+      <div id="customDaysDiv" class="hidden">
+        <label>จำนวนวันลาทั้งหมด (วัน):</label>
+        <input type="number" id="customDays" step="0.5" min="0.5" placeholder="เช่น 2 หรือ 2.5">
+        <span class="optional">*พิมพ์เฉพาะจำนวนวันทำงาน ไม่รวมวันหยุด</span>
+      </div>
 
       <label>เหตุผล <span class="optional">(ไม่บังคับ)</span>:</label>
       <textarea id="reason" rows="2" placeholder="ใส่เหตุผล (ถ้ามี)"></textarea>
@@ -49,10 +64,9 @@
   <script>
     var userId = "", empName = "";
     
-    // ⚠️ อย่าลืมเอาลิงก์ Web App URL (ที่ลงท้ายด้วย /exec) ของคุณมาใส่ตรงนี้นะครับ!
+    // ⚠️ 1. เอาลิงก์ Web App URL (ที่ลงท้ายด้วย /exec) มาใส่ตรงนี้เหมือนเดิมครับ
     var WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxAZ4luYdM2GqFkk1Tvoss-cK6eONaLFdOv4b7hFPO6c3L34tN0limDeiwqXaqHm_GB/exec"; 
 
-    // 🌟 ระบบ LIFF ดึงชื่ออัตโนมัติ
     async function main() {
       try {
         await liff.init({ liffId: "2009828487-hcLEuF0g" }); 
@@ -69,53 +83,82 @@
         document.getElementById("profile").innerHTML = "<b style='color:red;'>พังตอนเชื่อมต่อ: " + err.message + "</b>";
       }
     }
-    
     main();
+
+    // ระบบลูกเล่นกางฟอร์ม
+    function autoFillEndDate() {
+      var sd = document.getElementById("startDate").value;
+      var ed = document.getElementById("endDate");
+      if(!ed.value) ed.value = sd; // เติมวันที่สิ้นสุดให้อัตโนมัติ
+    }
+
+    function checkPeriod() {
+      var p = document.getElementById("leavePeriod").value;
+      if (p === "หลายวัน") {
+        document.getElementById("endDateDiv").classList.remove("hidden");
+        document.getElementById("customDaysDiv").classList.remove("hidden");
+      } else {
+        document.getElementById("endDateDiv").classList.add("hidden");
+        document.getElementById("customDaysDiv").classList.add("hidden");
+      }
+    }
 
     function submitForm() {
       var t = document.getElementById("leaveType").value;
-      var d = document.getElementById("leaveDate").value;
+      var sd = document.getElementById("startDate").value;
+      var ed = document.getElementById("endDate").value;
       var p = document.getElementById("leavePeriod").value;
       var r = document.getElementById("reason").value || "-"; 
       var fileInput = document.getElementById("uploadFile").files[0];
       
-      if(!d || !p) return alert("กรุณากรอกวันที่ให้ครบถ้วน");
+      if(!sd) return alert("กรุณาเลือกวันที่เริ่มลา");
 
-      var days = (p === "เต็มวัน") ? 1 : 0.5;
+      var finalDate = sd; 
+      var finalDays = 1;
+
+      // คำนวณวันและข้อความที่จะส่งไปหลังบ้าน
+      if (p === "เต็มวัน") {
+        finalDate = sd; finalDays = 1;
+      } else if (p === "ครึ่งวันเช้า" || p === "ครึ่งวันบ่าย") {
+        finalDate = sd; finalDays = 0.5;
+      } else if (p === "หลายวัน") {
+        if(!ed) return alert("กรุณาเลือกถึงวันที่");
+        var customDays = parseFloat(document.getElementById("customDays").value);
+        if(!customDays || customDays <= 0) return alert("กรุณาระบุจำนวนวันลาให้ถูกต้อง");
+        finalDate = sd + " ถึง " + ed;
+        finalDays = customDays;
+      }
 
       document.getElementById("submitBtn").innerText = "กำลังประมวลผล...";
       document.getElementById("submitBtn").disabled = true;
 
-      // แปลงรูปภาพ (ถ้ามีแนบมา)
       if (fileInput) {
         document.getElementById("submitBtn").innerText = "กำลังอัปโหลดรูปภาพ...";
         var reader = new FileReader();
         reader.onload = function(e) {
           var base64Data = e.target.result.split(',')[1];
-          sendToGoogle(t, d, p, days, r, base64Data, fileInput.name, fileInput.type);
+          sendToGoogle(t, finalDate, p, finalDays, r, base64Data, fileInput.name, fileInput.type);
         };
         reader.readAsDataURL(fileInput);
       } else {
-        // ถ้าไม่มีรูป ส่งปกติ
-        sendToGoogle(t, d, p, days, r, "", "", "");
+        sendToGoogle(t, finalDate, p, finalDays, r, "", "", "");
       }
     }
 
-    function sendToGoogle(t, d, p, days, r, base64Data, fileName, mimeType) {
+    function sendToGoogle(t, finalDate, p, finalDays, r, base64Data, fileName, mimeType) {
       document.getElementById("submitBtn").innerText = "กำลังส่งข้อมูล...";
       
       fetch(WEB_APP_URL, {
         method: "POST",
         body: JSON.stringify({ 
-          action: "api_request", userId: userId, empName: empName, leaveType: t, leaveDate: d, leavePeriod: p, leaveDays: days, reason: r,
+          action: "api_request", userId: userId, empName: empName, leaveType: t, leaveDate: finalDate, leavePeriod: p, leaveDays: finalDays, reason: r,
           fileBase64: base64Data, fileName: fileName, mimeType: mimeType
         })
       })
       .then(response => response.text())
       .then(result => {
         if(result === "unregistered") {
-          alert("❌ คุณยังไม่ได้ลงทะเบียนพนักงาน!\nกรุณากดเมนู 'ลงทะเบียน' ในแชทก่อนครับ");
-          liff.closeWindow();
+          alert("❌ คุณยังไม่ได้ลงทะเบียนพนักงาน!");
         } else if(result === "success") {
           document.body.innerHTML = "<div style='text-align:center; padding: 40px;'><h1 style='color:#00B900;'>✅ ส่งคำขอสำเร็จ!</h1><p>ระบบบันทึกข้อมูลเรียบร้อยแล้ว<br><br><b style='color:#555;'>กดกากบาท (X) มุมขวาบนเพื่อปิดหน้านี้ได้เลยครับ</b></p></div>";
         } else {
