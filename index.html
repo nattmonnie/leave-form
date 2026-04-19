@@ -4,33 +4,29 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ฟอร์มแจ้งลางาน</title>
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
     body { font-family: 'Kanit', sans-serif; padding: 20px; background-color: #f4f6f9; margin: 0; }
     .container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
     h2 { text-align: center; color: #333; }
-    label { font-weight: bold; margin-top: 10px; display: block; color: #555; }
-    select, input, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
+    label { font-weight: bold; margin-top: 10px; display: block; color: #555; font-size: 14px;}
+    select, input, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; background-color: white;}
     button { width: 100%; padding: 12px; background-color: #00B900; color: white; border: none; border-radius: 5px; font-size: 16px; margin-top: 20px; cursor: pointer; font-weight: bold;}
-    #profile { text-align: center; margin-bottom: 20px; font-size: 16px; color: #0056b3;}
+    #profile { text-align: center; margin-bottom: 20px; font-size: 16px;}
+    .optional { color: #888; font-weight: normal; font-size: 12px;}
   </style>
 </head>
 <body>
   <div class="container">
     <h2>ฟอร์มแจ้งลางาน</h2>
-    <div id="profile">กำลังเชื่อมต่อบัญชี...</div>
+    <div id="profile">กำลังโหลดข้อมูล...</div>
 
     <form id="leaveForm">
       <label>ประเภทการลา:</label>
-      <select id="leaveType">
-        <option value="ลาป่วย">ลาป่วย</option>
-        <option value="ลากิจส่วนตัว">ลากิจส่วนตัว</option>
-      </select>
+      <select id="leaveType"><option value="ลาป่วย">ลาป่วย</option><option value="ลากิจส่วนตัว">ลากิจส่วนตัว</option></select>
       
       <label>วันที่ลา:</label>
       <input type="date" id="leaveDate">
       
-      <!-- 🌟 เปลี่ยนมาใช้ Dropdown เลือกช่วงเวลาแทน -->
       <label>ช่วงเวลาการลา:</label>
       <select id="leavePeriod">
         <option value="เต็มวัน">เต็มวัน (1 วัน)</option>
@@ -38,74 +34,86 @@
         <option value="ครึ่งวันบ่าย">ครึ่งวันบ่าย (0.5 วัน)</option>
       </select>
 
-      <label>เหตุผล:</label><textarea id="reason" rows="3"></textarea>
+      <label>เหตุผล <span class="optional">(ไม่บังคับ)</span>:</label>
+      <textarea id="reason" rows="2" placeholder="ใส่เหตุผล (ถ้ามี)"></textarea>
+
+      <label>แนบรูปภาพ / ใบรับรองแพทย์ <span class="optional">(ไม่บังคับ)</span>:</label>
+      <input type="file" id="uploadFile" accept="image/*">
+
       <button type="button" id="submitBtn" onclick="submitForm()">ส่งคำขอ</button>
     </form>
   </div>
 
-    <script>
-    var userId = "", empName = "";
-    
-    // ⚠️ สำคัญมาก: เอาลิงก์ Web App URL (ที่ลงท้ายด้วย /exec) ของคุณมาใส่ตรงนี้!
-    var WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwYklEleNRkI4oMpdG_bzdPkp3nX8RhmU8NcLOvIq_iUqEocOA0V5jjx9fdjBN8bbt2/exec"; 
+  <script>
+    var userId = "<?= uid ?>";
+    var empName = "<?= name ?>";
+    var WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz6q2ARcSOCNZBKqRz9EJIzr5unptMiqgVXkQyjCj4JT8WnFqR1mHmL7s_hXtVECi9T/exec"; // ⚠️ ใส่ลิงก์ /exec เหมือนเดิม
 
-    async function main() {
-      try {
-        await liff.init({ liffId: "2009828487-hcLEuF0g" }); 
+    window.onload = function() {
+      // สกัด UID และ Name จาก URL อัตโนมัติ (เทคนิควิชามาร)
+      const urlParams = new URLSearchParams(window.location.search);
+      userId = urlParams.get('uid') || "";
+      empName = urlParams.get('name') || "";
 
-        if (liff.isLoggedIn()) {
-          const profile = await liff.getProfile();
-          userId = profile.userId;
-          empName = profile.displayName;
-          document.getElementById("profile").innerHTML = "ผู้ขอลา: <b style='color:#00B900;'>" + empName + "</b>";
-        } else {
-          liff.login();
-        }
-      } catch (err) {
-        document.getElementById("profile").innerHTML = "<b style='color:red;'>พังตอนเชื่อมต่อ: " + err.message + "</b>";
+      if(userId !== "") {
+        document.getElementById("profile").innerHTML = "ผู้ขอลา: <b style='color:#00B900;'>" + empName + "</b>";
+      } else {
+        document.getElementById("profile").innerHTML = "<b style='color:red;'>โปรดเข้าผ่านปุ่มในแชท LINE เท่านั้น</b>";
+        document.getElementById("submitBtn").disabled = true;
       }
-    }
-    
-    main();
+    };
 
     function submitForm() {
       var t = document.getElementById("leaveType").value;
       var d = document.getElementById("leaveDate").value;
       var p = document.getElementById("leavePeriod").value;
-      var r = document.getElementById("reason").value;
+      var r = document.getElementById("reason").value || "-"; // ถ้าไม่กรอกเหตุผล ให้ส่งเครื่องหมายขีดไปแทน
+      var fileInput = document.getElementById("uploadFile").files[0];
       
-      if(!d || !p || !r) return alert("กรุณากรอกข้อมูลให้ครบถ้วน");
+      if(!d || !p) return alert("กรุณากรอกวันที่ให้ครบถ้วน");
 
-      // แปลงช่วงเวลาเป็นตัวเลขเพื่อบันทึกลงตาราง
       var days = (p === "เต็มวัน") ? 1 : 0.5;
 
-      document.getElementById("submitBtn").innerText = "กำลังส่งข้อมูล...";
+      document.getElementById("submitBtn").innerText = "กำลังประมวลผล...";
       document.getElementById("submitBtn").disabled = true;
 
-      // สั่งยิงข้อมูลข้ามไปหา Google Apps Script
+      // 🌟 ถ้ามีการแนบรูป ให้แปลงรูปภาพก่อนส่ง
+      if (fileInput) {
+        document.getElementById("submitBtn").innerText = "กำลังอัปโหลดรูปภาพ...";
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          var base64Data = e.target.result.split(',')[1];
+          sendToGoogle(t, d, p, days, r, base64Data, fileInput.name, fileInput.type);
+        };
+        reader.readAsDataURL(fileInput);
+      } else {
+        // ถ้าไม่มีรูป ก็ส่งข้อมูลแบบปกติไปเลย
+        sendToGoogle(t, d, p, days, r, "", "", "");
+      }
+    }
+
+    function sendToGoogle(t, d, p, days, r, base64Data, fileName, mimeType) {
+      document.getElementById("submitBtn").innerText = "กำลังส่งข้อมูล...";
+      
       fetch(WEB_APP_URL, {
         method: "POST",
-        body: JSON.stringify({ action: "api_request", userId: userId, empName: empName, leaveType: t, leaveDate: d, leavePeriod: p, leaveDays: days, reason: r })
+        body: JSON.stringify({ 
+          action: "api_request", userId: userId, empName: empName, leaveType: t, leaveDate: d, leavePeriod: p, leaveDays: days, reason: r,
+          fileBase64: base64Data, fileName: fileName, mimeType: mimeType
+        })
       })
       .then(response => response.text())
       .then(result => {
         if(result === "unregistered") {
-          alert("❌ คุณยังไม่ได้ลงทะเบียนพนักงาน!\nกรุณากดเมนู 'ลงทะเบียน' ในแชทก่อนครับ");
-          liff.closeWindow();
+          alert("❌ คุณยังไม่ได้ลงทะเบียนพนักงาน!");
         } else if(result === "success") {
-          // ถ้าสำเร็จ ให้เปลี่ยนหน้าจอเป็นสีเขียว และรอ 1.5 วิเพื่อปิดหน้าต่างอัตโนมัติ
-          document.body.innerHTML = "<div style='text-align:center; padding: 40px;'><h1 style='color:#00B900;'>✅ ส่งคำขอสำเร็จ!</h1><p>ระบบบันทึกข้อมูลเรียบร้อยแล้ว</p></div>";
-          setTimeout(function() { liff.closeWindow(); }, 1500); 
+          document.body.innerHTML = "<div style='text-align:center; padding: 40px;'><h1 style='color:#00B900;'>✅ ส่งคำขอสำเร็จ!</h1><p>ระบบบันทึกข้อมูลเรียบร้อยแล้ว<br><br><b style='color:#555;'>กรุณากดกากบาท (X) มุมขวาบนเพื่อปิดหน้านี้</b></p></div>";
         } else {
-          alert("เกิดข้อผิดพลาดจากเซิร์ฟเวอร์: " + result);
+          alert("เกิดข้อผิดพลาด: " + result);
           document.getElementById("submitBtn").innerText = "ส่งคำขอ";
           document.getElementById("submitBtn").disabled = false;
         }
-      }).catch(err => {
-        alert("ส่งข้อมูลไม่สำเร็จ กรุณาลองใหม่: " + err);
-        document.getElementById("submitBtn").innerText = "ส่งคำขอ";
-        document.getElementById("submitBtn").disabled = false;
-      });
+      }).catch(err => alert("ส่งไม่สำเร็จ: " + err));
     }
   </script>
 </body>
