@@ -45,10 +45,10 @@
 
   <script>
     var userId = "", empName = "";
-    var WEB_APP_URL = "ใส่_WEB_APP_URL_ของคุณตรงนี้"; // ⚠️ แปะ Web App URL
+    var WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwYklEleNRkI4oMpdG_bzdPkp3nX8RhmU8NcLOvIq_iUqEocOA0V5jjx9fdjBN8bbt2/exec"; // ⚠️ แปะ Web App URL
     
     async function main() {
-      await liff.init({ liffId: "ใส่_LIFF_ID_ตรงนี้" });  // ⚠️ แปะ LIFF ID
+      await liff.init({ liffId: "2009828487-hcLEuF0g" });  // ⚠️ แปะ LIFF ID
       if (liff.isLoggedIn()) {
         const profile = await liff.getProfile();
         userId = profile.userId; empName = profile.displayName;
